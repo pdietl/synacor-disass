@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <getopt.h>
+#include <ctype.h>
 #include "arch.h"
 
 void out_handler(FILE *fp);
@@ -47,6 +48,7 @@ struct asm_instr ops[] = {
 };
 
 void disass(FILE *fp);
+void printl(int increment, const char *format, ...);
 
 void not_implemented(enum opcode);
 
@@ -106,18 +108,26 @@ int main(int argc, char **argv)
     return 0;
 }
 
+void print_data(uint16_t val)
+{
+    uint8_t one, two;
+    one = val >> 8;
+    two = val & 0xff;
+    printl(1, "data\t");
+    printf("%#04x %#04x\t", one, two);
+    printf("|%c%c|\n", isprint(one) ? one : '.', isprint(two) ? two : '.');
+}
+
 void disass_single(uint16_t op, FILE *fp);
 
 void disass(FILE *fp)
 {
     uint16_t op;
     while (readU16(fp, &op) != -1) {
-        if (op >= NUM_OP_CODES) {
-            fprintf(stderr, "ERROR: Op code out of range! Valid codes are from 0 through %u. Offending op code: %u\n", 
-                NUM_OP_CODES - 1, op);
-            exit(1);
-        }
-        disass_single(op, fp);
+        if (op >= NUM_OP_CODES)
+            print_data(op);
+        else
+            disass_single(op, fp);
     }
 }
 
@@ -165,7 +175,9 @@ void check_valid_int(uint16_t n, const char *instruction, int arg_num)
     if (is_valid_int(n))
         return;
 
-    fprintf(stderr, "ERROR: expected argument %d of instruction %s to be a valid integer! Offending integer was: %u\nIntegers are from 0 through %u\n",
+    fprintf(stderr, "ERROR: expected argument %d of instruction %s to be a "
+                    "valid integer! Offending integer was: %u\n"
+                    "Integers are from 0 through %u\n",
         arg_num, instruction, n, MAX_INT);
     exit(1);
 }
@@ -174,7 +186,9 @@ void check_valid_reg(uint16_t val, const char *instruction, int arg_num)
 {
     if (is_reg(val))
         return;
-    fprintf(stderr, "ERROR: expected argument %d of instruction %s to be a register!\nOffending value was: %d\n", arg_num, instruction, val);
+    fprintf(stderr, "ERROR: expected argument %d of instruction %s to be "
+                    "a register!\nOffending value was: "
+                    "%d\n", arg_num, instruction, val);
     exit(1);
 }
 
@@ -182,7 +196,8 @@ void check_valid_int_or_reg(uint16_t val, const char *instruction, int arg_num)
 {
     if (is_reg(val) || is_valid_int(val))
         return;
-    fprintf(stderr, "ERROR: expected argument %d of instruction %s to be a register or integer!\nOffending value was: %d\n", 
+    fprintf(stderr, "ERROR: expected argument %d of instruction %s to be "
+                    "a register or integer!\nOffending value was: %d\n", 
         arg_num, instruction, val);
 }
 
