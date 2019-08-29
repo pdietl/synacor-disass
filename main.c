@@ -262,11 +262,11 @@ void disass_single(uint16_t op_num, FILE *fp)
         uint16_t ch = readU16_check(fp);
         if ((compress_outs && !last_instr_was_out) || !compress_outs) {
             if (raw_instr) {
-                printl(num_args + 1, "%04x", instr.op_code);
+                printl(0, "%04x", instr.op_code);
                 print_int(ch);
                 printf("          \t\t%-4s\t", instr.mnemonic);
             } else {
-                printl(num_args + 1, "%-4s\t", instr.mnemonic);
+                printl(0, "%-4s\t", instr.mnemonic);
             }
         }
         if (compress_outs && !last_instr_was_out)
@@ -275,6 +275,7 @@ void disass_single(uint16_t op_num, FILE *fp)
             printf("%s", convert_escape(ch));
         else
             printf("\"%s\"\n", convert_escape(ch));
+        line += 2;
         last_instr_was_out = true;
         return;
     } else if (compress_outs && last_instr_was_out) {
@@ -283,7 +284,7 @@ void disass_single(uint16_t op_num, FILE *fp)
     }
 
     if (raw_instr)
-        printl(num_args + 1, "%04x", instr.op_code);
+        printl(1, "%04x", instr.op_code);
 
     for (i = 0; i < sizeof arguments / sizeof *arguments; ++i) {
         type = instr.arg_types[i];
@@ -314,6 +315,8 @@ void disass_single(uint16_t op_num, FILE *fp)
     }
 
     num_args = i;
+
+    line += num_args;
 
     for (i = 0; raw_instr && i < MAX_NUM_ARGS - num_args; ++i)
         printf("    ");
